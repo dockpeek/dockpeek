@@ -10,6 +10,7 @@ from flask_login import (
 # Initialize Flask app
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "defaultsecretkey")
+DOCKER_SOCKET = os.environ.get("DOCKER_SOCKET", "unix://var/run/docker.sock")
 
 CORS(app)
 
@@ -36,7 +37,7 @@ def load_user(user_id):
 
 # Initialize Docker client
 try:
-    client = docker.DockerClient(base_url='unix://var/run/docker.sock')
+    client = docker.DockerClient(base_url=DOCKER_SOCKET)
     client.ping()
     print("Successfully connected to Docker daemon!")
 except Exception as e:
