@@ -36,6 +36,7 @@ services:
       - SECRET_KEY=my_secret_key
       - USERNAME=admin # Set username for login
       - PASSWORD=admin # Set password for login
+      - DOCKER_SOCKET=unix://var/run/docker.sock
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     restart: unless-stopped
