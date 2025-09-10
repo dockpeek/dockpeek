@@ -1,0 +1,55 @@
+services:
+  dockpeek:
+    image: ghcr.io/dockpeek/dockpeek:latest
+    environment:
+      SECRET_KEY: your_secure_secret_key
+      USERNAME: admin
+      PASSWORD: secure_password
+      TRAEFIK_LABELS: "true"
+      DOCKER_HOST: tcp://tasks.socket-proxy:2375  # Connect to Swarm manager via socket-proxy
+    networks:
+      - traefik
+      - socket-proxy
+    # Go ahead and map the port if you don't plan on using Traefik to expose the ui
+    # ports:
+    #   - "3420:8000"
+    deploy:
+      replicas: 1
+      # Adjust as needed
+      labels:
+        traefik.enable: "true"
+        traefik.swarm.network: traefik
+        traefik.http.routers.dockpeek.rule: Host(`dockpeek.example.com`)
+        traefik.http.routers.dockpeek.entrypoints: websecure
+        traefik.http.services.dockpeek.loadbalancer.server.port: 8000
+
+  socket-proxy:
+    image: lscr.io/linuxserver/socket-proxy:latest
+    environment:
+      CONTAINERS: 1
+      IMAGES: 1
+      PING: 1
+      VERSION: 1
+      INFO: 1
+      POST: 1
+      SERVICES: 1     # Enable Swarm services API
+      TASKS: 1        # Enable Swarm tasks API
+      NODES: 1        # Enable Swarm nodes API
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - type: tmpfs
+        target: /run
+        tmpfs:
+          size: 100000000
+    networks:
+      - socket-proxy
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+networks:
+  socket-proxy:
+  traefik:
+    external: true

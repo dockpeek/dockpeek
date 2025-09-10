@@ -353,45 +353,57 @@ document.addEventListener("DOMContentLoaded", () => {
 
       let statusClass = 'status-unknown';
 
-      switch (c.status) {
-        case 'running':
+      // Swarm: running (x/y) should be green if x==y, else default
+      const swarmRunningMatch = typeof c.status === 'string' && c.status.match(/^running \((\d+)\/(\d+)\)$/);
+      if (swarmRunningMatch) {
+        const running = parseInt(swarmRunningMatch[1], 10);
+        const desired = parseInt(swarmRunningMatch[2], 10);
+        if (running === desired) {
           statusClass = 'status-running';
-          break;
-        case 'healthy':
-          statusClass = 'status-healthy';
-          break;
-        case 'unhealthy':
-          statusClass = 'status-unhealthy';
-          break;
-        case 'starting':
-          statusClass = 'status-starting';
-          break;
-        case 'exited':
-          statusClass = 'status-exited';
-          break;
-        case 'paused':
-          statusClass = 'status-paused';
-          break;
-        case 'restarting':
-          statusClass = 'status-restarting';
-          break;
-        case 'removing':
-          statusClass = 'status-removing';
-          break;
-        case 'dead':
-          statusClass = 'status-dead';
-          break;
-        case 'created':
-          statusClass = 'status-created';
-          break;
-        default:
-          if (c.status.includes('exited')) {
-            statusClass = 'status-exited';
-          } else if (c.status.includes('health unknown')) {
+        } else {
+          statusClass = 'status-unhealthy'; // or keep as-is for problem color
+        }
+      } else {
+        switch (c.status) {
+          case 'running':
             statusClass = 'status-running';
-          } else {
-            statusClass = 'status-unknown';
-          }
+            break;
+          case 'healthy':
+            statusClass = 'status-healthy';
+            break;
+          case 'unhealthy':
+            statusClass = 'status-unhealthy';
+            break;
+          case 'starting':
+            statusClass = 'status-starting';
+            break;
+          case 'exited':
+            statusClass = 'status-exited';
+            break;
+          case 'paused':
+            statusClass = 'status-paused';
+            break;
+          case 'restarting':
+            statusClass = 'status-restarting';
+            break;
+          case 'removing':
+            statusClass = 'status-removing';
+            break;
+          case 'dead':
+            statusClass = 'status-dead';
+            break;
+          case 'created':
+            statusClass = 'status-created';
+            break;
+          default:
+            if (c.status.includes('exited')) {
+              statusClass = 'status-exited';
+            } else if (c.status.includes('health unknown')) {
+              statusClass = 'status-running';
+            } else {
+              statusClass = 'status-unknown';
+            }
+        }
       }
 
       statusCell.className = `py-3 px-4 border-b border-gray-200 table-cell-status ${statusClass}`;
@@ -905,6 +917,11 @@ document.addEventListener("DOMContentLoaded", () => {
     return filters;
   }
 
+  function isSwarmMode() {
+    // Heuristic: if any container has a status like 'running (x/y)' or 'no-tasks', it's a Swarm service
+    return allContainersData.some(c => typeof c.status === 'string' && (c.status.match(/^running \(\d+\/\d+\)$/) || c.status === 'no-tasks'));
+  }
+
   function updateDisplay() {
     let workingData = [...allContainersData];
 
@@ -912,8 +929,38 @@ document.addEventListener("DOMContentLoaded", () => {
       workingData = workingData.filter(c => c.server === currentServerFilter);
     }
 
+    // Swarm mode: repurpose toggle to "Show Problems"
+    const swarmMode = isSwarmMode();
+    const filterLabel = document.getElementById('filter-running-label');
+    if (swarmMode) {
+      filterLabel.textContent = 'Show Problems';
+      filterLabel.setAttribute('data-tooltip', 'Show only services where not all replicas are running');
+      filterRunningCheckbox.parentElement.classList.remove('hidden');
+    } else {
+      filterLabel.textContent = 'Running only';
+      filterLabel.removeAttribute('data-tooltip');
+      filterRunningCheckbox.parentElement.classList.remove('hidden');
+    }
+
     if (filterRunningCheckbox.checked) {
-      workingData = workingData.filter(c => c.status === 'running' || c.status === 'healthy');
+      if (swarmMode) {
+        // Only show services where running < desired replicas
+        workingData = workingData.filter(c => {
+          if (typeof c.status === 'string') {
+            const m = c.status.match(/^running \((\d+)\/(\d+)\)$/);
+            if (m) {
+              const running = parseInt(m[1], 10);
+              const desired = parseInt(m[2], 10);
+              return running < desired;
+            }
+            // Also show 'no-tasks' as a problem
+            if (c.status === 'no-tasks') return true;
+          }
+          return false;
+        });
+      } else {
+        workingData = workingData.filter(c => c.status === 'running' || c.status === 'healthy');
+      }
     }
 
     if (filterUpdatesCheckbox.checked) {

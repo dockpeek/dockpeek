@@ -109,6 +109,81 @@ services:
     restart: unless-stopped
 ```
 
+### Option 3: Docker Swarm/Stack Deployment (with Traefik)
+
+Dockpeek now supports native Docker Swarm mode! You can deploy Dockpeek as a stack, with a single socket-proxy instance, and view/manage all Swarm services and tasks in the dashboard. This is ideal for production clusters using Traefik as an ingress proxy.
+
+**Example stack file (docker-compose-swarm-socket.yml):**
+
+```yaml
+services:
+  dockpeek:
+    image: ghcr.io/dockpeek/dockpeek:latest
+    environment:
+      - SECRET_KEY=your_secure_secret_key
+      - USERNAME=admin
+      - PASSWORD=secure_password
+      - TRAEFIK_LABELS=true
+      - DOCKER_HOST=tcp://tasks.socket-proxy:2375  # Connect to Swarm manager via socket-proxy
+    ports:
+      - "3420:8000"
+    networks:
+      - traefik
+      - dockpeek-internal
+    deploy:
+      replicas: 1
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.dockpeek.rule=Host(`dockpeek.example.com`)"
+        - "traefik.http.routers.dockpeek.entrypoints=websecure"
+        - "traefik.http.routers.dockpeek.tls=true"
+        - "traefik.http.services.dockpeek.loadbalancer.server.port=8000"
+
+  socket-proxy:
+    image: lscr.io/linuxserver/socket-proxy:latest
+    environment:
+      - CONTAINERS=1
+      - IMAGES=1
+      - PING=1
+      - VERSION=1
+      - INFO=1
+      - POST=1
+      - SERVICES=1     # Enable Swarm services API
+      - TASKS=1        # Enable Swarm tasks API
+      - NODES=1        # Enable Swarm nodes API
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - type: tmpfs
+        target: /run
+        tmpfs:
+          size: 100000000
+    networks:
+      - socket-proxy
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+networks:
+  socket-proxy:
+  traefik:
+    external: true
+```
+
+**How it works:**
+
+- The dockpeek and socket-proxy services share a private network for secure API access.
+- The traefik network is external and should be pre-created by your Traefik deployment.
+- Traefik labels on dockpeek expose the dashboard securely at your chosen domain.
+- The DOCKER_HOST variable points to the socket-proxy service, which must run on a Swarm manager node.
+- Dockpeek will auto-detect Swarm mode and show all services/tasks in the dashboard, with all the usual features (port mapping, Traefik integration, update checks, etc.).
+
+> Deploy with:
+> ```sh
+> docker stack deploy -c docker-compose-swarm-socket.yml dockpeek
+> ```
+
 <br>
 
 ### Adding Multiple Docker Hosts
