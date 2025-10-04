@@ -1326,6 +1326,10 @@ body.dark-mode .column-menu-item span {
   background-color: #b3b3b3;
 }
 
+#prune-info-message{
+  overflow-y: auto;
+}
+
 body.dark-mode .prune-badge {
   background-color: #364153;
 }
