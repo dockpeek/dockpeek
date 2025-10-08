@@ -4,7 +4,7 @@ import { showPruneInfoModal, showPruneResultModal } from './modals.js';
 
 export async function initPruneInfo() {
   try {
-    const response = await fetch('/get-prune-info', {
+    const response = await fetch('./get-prune-info', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ server_name: state.currentServerFilter })
@@ -23,7 +23,7 @@ export async function initPruneInfo() {
 
 export async function handlePruneImages() {
   try {
-    const response = await fetch('/get-prune-info', {
+    const response = await fetch('./get-prune-info', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ server_name: state.currentServerFilter })
@@ -49,7 +49,7 @@ export async function handlePruneImages() {
 
 async function performPrune() {
   try {
-    const response = await fetch('/prune-images', {
+    const response = await fetch('./prune-images', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ server_name: state.currentServerFilter })

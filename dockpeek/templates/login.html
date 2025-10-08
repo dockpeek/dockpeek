@@ -5,17 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dockpeek Login</title>
-    <link rel="icon" type="image/svg+xml" href="/static/images/logo.svg">
-    <link href="/static/css/tailwindcss.css" rel="stylesheet" >
+    <link rel="icon" type="image/svg+xml" href="./static/images/logo.svg">
+    <link href="./static/css/tailwindcss.css" rel="stylesheet" >
 </head>
 
 <body class="min-h-screen flex items-center justify-center dark-mode">
     <div class="login-box shadow-xl rounded-lg p-8 max-w-md w-full">
         <div class="flex justify-center mb-6">
-            <img src="/static/images/logo_2.svg" alt="Logo" class="w-20 h-20 mb-6">
+            <img src="./static/images/logo_2.svg" alt="Logo" class="w-20 h-20 mb-6">
         </div>
         <h2 class="text-2xl font-bold text-center mb-6">Log in to Dockpeek</h2>
-        <form method="POST" action="/login">
+        <form method="POST" action="./login">
             {% if error %}
             <p class="text-red-500 text-center mb-4">{{ error }}</p>
             {% endif %}
