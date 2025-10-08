@@ -5,35 +5,35 @@
   font-family: 'Inter';
   font-style: normal;
   font-weight: 400;
-  src: url('/static/fonts/inter/inter-v19-latin-regular.woff2') format('woff2');
+  src: url('../fonts/inter/inter-v19-latin-regular.woff2') format('woff2');
 }
 @font-face {
   font-display: swap;
   font-family: 'Inter';
   font-style: normal;
   font-weight: 500;
-  src: url('/static/fonts/inter/inter-v19-latin-500.woff2') format('woff2');
+  src: url('../fonts/inter/inter-v19-latin-500.woff2') format('woff2');
 }
 @font-face {
   font-display: swap;
   font-family: 'Inter';
   font-style: normal;
   font-weight: 600;
-  src: url('/static/fonts/inter/inter-v19-latin-600.woff2') format('woff2');
+  src: url('../fonts/inter/inter-v19-latin-600.woff2') format('woff2');
 }
 @font-face {
   font-display: swap;
   font-family: 'Inter';
   font-style: normal;
   font-weight: 700;
-  src: url('/static/fonts/inter/inter-v19-latin-700.woff2') format('woff2');
+  src: url('../fonts/inter/inter-v19-latin-700.woff2') format('woff2');
 }
 @font-face {
   font-display: swap;
   font-family: 'Inter';
   font-style: normal;
   font-weight: 800;
-  src: url('/static/fonts/inter/inter-v19-latin-800.woff2') format('woff2');
+  src: url('../fonts/inter/inter-v19-latin-800.woff2') format('woff2');
 }
 @layer theme, base, components, utilities;
 @layer theme {
