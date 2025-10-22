@@ -37,7 +37,20 @@ Add labels to your containers to tag them, customize their appearance, or contro
 * `dockpeek.https` — Force HTTPS protocol for specific ports
 * `dockpeek.link` — Turn container names into clickable links
 * `dockpeek.ports` — Add custom ports to display alongside detected ones
+* `dockpeek.port-range-grouping` — Control port range grouping (true/false)
 * `dockpeek.tags` — Organize and categorize containers with custom tags
+
+### Port Range Grouping
+
+Dockpeek automatically groups consecutive ports into ranges for cleaner display. For example, ports 601, 602, 603, 604, 605, 606 will be displayed as a single range "601-606" instead of individual port badges.
+
+
+**Per-Container Configuration:**
+```yaml
+labels:
+  - "dockpeek.port-range-grouping=false"  # Disable for this container
+  - "dockpeek.port-range-grouping=true"   # Enable for this container (overrides global)
+```
 
 <br>
 
@@ -220,6 +233,7 @@ services:
 | `DOCKER_HOST_NAME`            | Auto-detected | Display name for the primary server (auto-detected from Docker API if not set) |
 | `DOCKER_HOST_PUBLIC_HOSTNAME` | Auto-detected | Optional hostname or IP for generating clickable links |
 | `DOCKER_CONNECTION_TIMEOUT`   | `0.5`           | Connection timeout in seconds for Docker host discovery |
+| `PORT_RANGE_GROUPING`         | `true`         | Set to `false` to disable port range grouping globally |
 
 ### Multi-Host Variables
 
@@ -264,6 +278,7 @@ services:
 | `dockpeek.ports` | Show additional ports | `dockpeek.ports=8080,9090`      |
 | `dockpeek.https` | Force HTTPS for ports | `dockpeek.https=9002,3000`      |
 | `dockpeek.link`  | Custom container link | `dockpeek.link=https://app.com` |
+| `dockpeek.port-range-grouping` | Control port range grouping | `dockpeek.port-range-grouping=false` |
 | `dockpeek.tags`  | tags                  | `dockpeek.tags=web,prod`        |
 
 <br>
@@ -427,6 +442,26 @@ networks:
 > ```yaml
 > labels:
 >   - "dockpeek.ports=8096,8920"
+> ```
+
+</details>
+
+<details>
+<summary><strong>How does port range grouping work?</strong></summary>
+
+> Dockpeek automatically detects consecutive ports and groups them into ranges for cleaner display:
+> - **Input**: 601, 602, 603, 604, 605, 606, 8080, 9000
+> - **Output**: 601-606, 8080, 9000
+>
+> **Disable globally:**
+> ```bash
+> export PORT_RANGE_GROUPING=false
+> ```
+>
+> **Disable per-container:**
+> ```yaml
+> labels:
+>   - "dockpeek.port-range-grouping=false"
 > ```
 
 </details>

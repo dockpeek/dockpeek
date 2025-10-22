@@ -142,6 +142,7 @@ def extract_labels_data(labels, tags_enable):
     custom_ports = labels.get('dockpeek.ports', '') or labels.get('dockpeek.port', '')
     custom_tags = labels.get('dockpeek.tags', '') or labels.get('dockpeek.tag', '')
     https_ports = labels.get('dockpeek.https', '')
+    port_range_grouping = labels.get('dockpeek.port-range-grouping', '')
     
     tags = []
     if tags_enable and custom_tags:
@@ -153,6 +154,7 @@ def extract_labels_data(labels, tags_enable):
         'custom_url': custom_url,
         'custom_ports_list': parse_comma_separated(custom_ports),
         'https_ports_list': parse_comma_separated(https_ports),
+        'port_range_grouping': port_range_grouping.lower() if port_range_grouping else None,
         'tags': tags
     }
 
@@ -169,7 +171,7 @@ def get_or_check_update(cache_key, client, container_or_service, server_name, im
         return update_checker.check_local_image_updates(client, container_or_service, server_name)
 
 
-def process_swarm_service(service, tasks_by_service, client, server_name, public_hostname, is_docker_host, traefik_enabled, tags_enable):
+def process_swarm_service(service, tasks_by_service, client, server_name, public_hostname, is_docker_host, traefik_enabled, tags_enable, port_range_grouping_enabled):
     try:
         s_attrs = service.attrs
         spec = s_attrs.get('Spec', {})
@@ -187,6 +189,15 @@ def process_swarm_service(service, tasks_by_service, client, server_name, public
             None,
             is_docker_host
         )
+        
+        # Determine if port range grouping should be enabled for this container
+        container_port_range_grouping = labels_data['port_range_grouping']
+        if container_port_range_grouping is None:
+            # Use global setting if not specified per container
+            port_range_grouping = port_range_grouping_enabled
+        else:
+            # Use per-container setting
+            port_range_grouping = container_port_range_grouping == 'true'
         
         service_tasks = tasks_by_service.get(service.id, [])
         running = sum(1 for t in service_tasks if t['Status']['State'] == 'running')
@@ -208,7 +219,8 @@ def process_swarm_service(service, tasks_by_service, client, server_name, public
             'ports': port_map,
             'traefik_routes': traefik_routes,
             'tags': labels_data['tags'],
-            'update_available': update_available
+            'update_available': update_available,
+            'port_range_grouping': port_range_grouping
         }
         
         return container_info
@@ -222,7 +234,7 @@ def process_swarm_service(service, tasks_by_service, client, server_name, public
         }
 
 
-def process_container(container, client, server_name, public_hostname, is_docker_host, traefik_enabled, tags_enable):
+def process_container(container, client, server_name, public_hostname, is_docker_host, traefik_enabled, tags_enable, port_range_grouping_enabled):
     try:
         original_image = container.attrs.get('Config', {}).get('Image', '')
         if original_image:
@@ -268,6 +280,15 @@ def process_container(container, client, server_name, public_hostname, is_docker
                     'is_custom': True
                 })
         
+        # Determine if port range grouping should be enabled for this container
+        container_port_range_grouping = labels_data['port_range_grouping']
+        if container_port_range_grouping is None:
+            # Use global setting if not specified per container
+            port_range_grouping = port_range_grouping_enabled
+        else:
+            # Use per-container setting
+            port_range_grouping = container_port_range_grouping == 'true'
+        
         cache_key = update_checker.get_cache_key(server_name, container.name, image_name)
         update_available = get_or_check_update(cache_key, client, container, server_name, image_name, False)
         
@@ -284,7 +305,8 @@ def process_container(container, client, server_name, public_hostname, is_docker
             'ports': port_map,
             'traefik_routes': traefik_routes,
             'tags': labels_data['tags'],
-            'update_available': update_available
+            'update_available': update_available,
+            'port_range_grouping': port_range_grouping
         }
                 
         return container_info
@@ -298,7 +320,7 @@ def process_container(container, client, server_name, public_hostname, is_docker
             'ports': []
         }
     
-def process_single_host_data(host, traefik_enabled, tags_enable):
+def process_single_host_data(host, traefik_enabled, tags_enable, port_range_grouping_enabled):
     if host['status'] == 'inactive':
         return []
     
@@ -329,7 +351,7 @@ def process_single_host_data(host, traefik_enabled, tags_enable):
                 for service in services:
                     container_info = process_swarm_service(
                         service, tasks_by_service, client, server_name,
-                        public_hostname, is_docker_host, traefik_enabled, tags_enable
+                        public_hostname, is_docker_host, traefik_enabled, tags_enable, port_range_grouping_enabled
                     )
                     container_data.append(container_info)
             except Exception as swarm_error:
@@ -359,7 +381,7 @@ def process_single_host_data(host, traefik_enabled, tags_enable):
             try:
                 container_info = process_container(
                     container, client, server_name, public_hostname,
-                    is_docker_host, traefik_enabled, tags_enable
+                    is_docker_host, traefik_enabled, tags_enable, port_range_grouping_enabled
                 )
                 container_data.append(container_info)
             except Exception as container_error:
@@ -389,6 +411,7 @@ def get_all_data():
     
     TRAEFIK_ENABLE = current_app.config['TRAEFIK_ENABLE']
     TAGS_ENABLE = current_app.config['TAGS_ENABLE']
+    PORT_RANGE_GROUPING = current_app.config['PORT_RANGE_GROUPING']
     
     if not servers:
         return {"servers": [], "containers": [], "swarm_servers": []}
@@ -401,7 +424,7 @@ def get_all_data():
     
     with ThreadPoolExecutor(max_workers=len(servers)) as executor:
         future_to_host = {
-            executor.submit(process_single_host_data, host, TRAEFIK_ENABLE, TAGS_ENABLE): host 
+            executor.submit(process_single_host_data, host, TRAEFIK_ENABLE, TAGS_ENABLE, PORT_RANGE_GROUPING): host 
             for host in servers
         }
         
@@ -445,5 +468,6 @@ def get_all_data():
         "servers": server_list_for_json, 
         "containers": all_container_data,
         "traefik_enabled": TRAEFIK_ENABLE,
+        "port_range_grouping_enabled": PORT_RANGE_GROUPING,
         "swarm_servers": swarm_servers
     }
