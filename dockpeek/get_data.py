@@ -412,6 +412,7 @@ def get_all_data():
     TRAEFIK_ENABLE = current_app.config['TRAEFIK_ENABLE']
     TAGS_ENABLE = current_app.config['TAGS_ENABLE']
     PORT_RANGE_GROUPING = current_app.config['PORT_RANGE_GROUPING']
+    PORT_RANGE_THRESHOLD = current_app.config['PORT_RANGE_THRESHOLD']
     
     if not servers:
         return {"servers": [], "containers": [], "swarm_servers": []}
@@ -469,5 +470,6 @@ def get_all_data():
         "containers": all_container_data,
         "traefik_enabled": TRAEFIK_ENABLE,
         "port_range_grouping_enabled": PORT_RANGE_GROUPING,
+        "port_range_threshold": PORT_RANGE_THRESHOLD,
         "swarm_servers": swarm_servers
     }

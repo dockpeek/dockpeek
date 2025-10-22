@@ -107,7 +107,7 @@ export function renderPorts(container, cell) {
 
   if (shouldGroupPorts) {
     // Group ports into ranges and individual ports
-    const portGroups = groupPortsIntoRanges(container.ports);
+    const portGroups = groupPortsIntoRanges(container.ports, window.portRangeThreshold || 5);
 
     cell.innerHTML = portGroups.map(group => {
       if (group.isRange) {
@@ -144,7 +144,7 @@ export function renderPorts(container, cell) {
   }
 }
 
-function groupPortsIntoRanges(ports) {
+function groupPortsIntoRanges(ports, threshold = 5) {
   if (!ports.length) return [];
 
   // Sort ports by host_port numerically
@@ -169,8 +169,8 @@ function groupPortsIntoRanges(ports) {
       currentRange.endPort = port;
       currentRange.endPortNum = portNum;
     } else {
-      // Close the current range if it exists and has more than one port
-      if (currentRange && currentRange.endPortNum > currentRange.startPortNum) {
+      // Close the current range if it exists and meets the threshold
+      if (currentRange && (currentRange.endPortNum - currentRange.startPortNum + 1) >= threshold) {
         groups.push({
           isRange: true,
           startPort: currentRange.startPort,
@@ -179,11 +179,16 @@ function groupPortsIntoRanges(ports) {
           endPortNum: currentRange.endPortNum
         });
       } else if (currentRange) {
-        // Single port, add as individual
-        groups.push({
-          isRange: false,
-          port: currentRange.startPort
-        });
+        // Range doesn't meet threshold, add ports as individuals
+        for (let j = currentRange.startPortNum; j <= currentRange.endPortNum; j++) {
+          const portToAdd = sortedPorts.find(p => parseInt(p.host_port, 10) === j);
+          if (portToAdd) {
+            groups.push({
+              isRange: false,
+              port: portToAdd
+            });
+          }
+        }
       }
       
       // Start a new range
@@ -198,7 +203,7 @@ function groupPortsIntoRanges(ports) {
 
   // Close the last range
   if (currentRange) {
-    if (currentRange.endPortNum > currentRange.startPortNum) {
+    if ((currentRange.endPortNum - currentRange.startPortNum + 1) >= threshold) {
       groups.push({
         isRange: true,
         startPort: currentRange.startPort,
@@ -207,10 +212,16 @@ function groupPortsIntoRanges(ports) {
         endPortNum: currentRange.endPortNum
       });
     } else {
-      groups.push({
-        isRange: false,
-        port: currentRange.startPort
-      });
+      // Range doesn't meet threshold, add ports as individuals
+      for (let j = currentRange.startPortNum; j <= currentRange.endPortNum; j++) {
+        const portToAdd = sortedPorts.find(p => parseInt(p.host_port, 10) === j);
+        if (portToAdd) {
+          groups.push({
+            isRange: false,
+            port: portToAdd
+          });
+        }
+      }
     }
   }
 

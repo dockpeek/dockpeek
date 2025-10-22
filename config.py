@@ -20,6 +20,7 @@ class Config:
     TRAEFIK_ENABLE = os.environ.get("TRAEFIK_LABELS", "true").lower() == "true"
     TAGS_ENABLE = os.environ.get("TAGS", "true").lower() == "true"
     PORT_RANGE_GROUPING = os.environ.get("PORT_RANGE_GROUPING", "true").lower() == "true"
+    PORT_RANGE_THRESHOLD = int(os.environ.get("PORT_RANGE_THRESHOLD", "5"))
     
     PERMANENT_SESSION_LIFETIME = timedelta(days=14)
     

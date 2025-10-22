@@ -234,6 +234,7 @@ services:
 | `DOCKER_HOST_PUBLIC_HOSTNAME` | Auto-detected | Optional hostname or IP for generating clickable links |
 | `DOCKER_CONNECTION_TIMEOUT`   | `0.5`           | Connection timeout in seconds for Docker host discovery |
 | `PORT_RANGE_GROUPING`         | `true`         | Set to `false` to disable port range grouping globally |
+| `PORT_RANGE_THRESHOLD`        | `5`            | Minimum number of consecutive ports to group as a range |
 
 ### Multi-Host Variables
 
@@ -453,9 +454,16 @@ networks:
 > - **Input**: 601, 602, 603, 604, 605, 606, 8080, 9000
 > - **Output**: 601-606, 8080, 9000
 >
+> **Configure threshold:**
+> ```yaml
+> environment:
+>   - PORT_RANGE_THRESHOLD=3  # Only group 3+ consecutive ports
+> ```
+>
 > **Disable globally:**
-> ```bash
-> export PORT_RANGE_GROUPING=false
+> ```yaml
+> environment:
+>   - PORT_RANGE_GROUPING=false
 > ```
 >
 > **Disable per-container:**
