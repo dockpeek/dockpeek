@@ -39,7 +39,7 @@ export async function fetchContainerData() {
     });
     if (!response.ok) throw createResponseError(response);
 
-    const { servers = [], containers = [], traefik_enabled = true, swarm_servers = [] } = await response.json();
+    const { servers = [], containers = [], traefik_enabled = true, port_range_grouping_enabled = true, swarm_servers = [] } = await response.json();
 
     state.allServersData.splice(0, state.allServersData.length, ...servers);
     setCachedServerStatus(servers);
@@ -48,6 +48,7 @@ export async function fetchContainerData() {
     state.swarmServers = swarm_servers;
 
     window.traefikEnabled = traefik_enabled;
+    window.portRangeGroupingEnabled = port_range_grouping_enabled;
 
     state.isDataLoaded = true;
     document.getElementById('check-updates-button').disabled = false;

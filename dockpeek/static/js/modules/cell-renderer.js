@@ -100,15 +100,121 @@ export function renderPorts(container, cell) {
 
   const arrowSvg = `<svg width="12" height="12" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="align-middle"><path d="M19 12L31 24L19 36" stroke="currentColor" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
-  cell.innerHTML = container.ports.map(p => {
-    const badge = `<a href="${p.link}" data-tooltip="${p.link}" target="_blank" class="badge text-bg-dark rounded">${p.host_port}</a>`;
+  // Check if port range grouping is enabled (global setting and per-container setting)
+  const globalGroupingEnabled = window.portRangeGroupingEnabled !== false;
+  const containerGroupingEnabled = container.port_range_grouping !== false;
+  const shouldGroupPorts = globalGroupingEnabled && containerGroupingEnabled;
 
-    if (p.is_custom || !p.container_port) {
-      return `<div class="custom-port flex items-center mb-1">${badge}</div>`;
+  if (shouldGroupPorts) {
+    // Group ports into ranges and individual ports
+    const portGroups = groupPortsIntoRanges(container.ports);
+
+    cell.innerHTML = portGroups.map(group => {
+      if (group.isRange) {
+        // Render as a range
+        const rangeBadge = `<a href="${group.startPort.link}" data-tooltip="${group.startPort.link}" target="_blank" class="badge text-bg-dark rounded">${group.startPort.host_port}-${group.endPort.host_port}</a>`;
+        
+        if (group.startPort.is_custom || !group.startPort.container_port) {
+          return `<div class="custom-port flex items-center mb-1">${rangeBadge}</div>`;
+        }
+
+        return `<div class="flex items-center mb-1">${rangeBadge}${arrowSvg}<small class="text-secondary">${group.startPort.container_port}-${group.endPort.container_port}</small></div>`;
+      } else {
+        // Render as individual port
+        const badge = `<a href="${group.port.link}" data-tooltip="${group.port.link}" target="_blank" class="badge text-bg-dark rounded">${group.port.host_port}</a>`;
+
+        if (group.port.is_custom || !group.port.container_port) {
+          return `<div class="custom-port flex items-center mb-1">${badge}</div>`;
+        }
+
+        return `<div class="flex items-center mb-1">${badge}${arrowSvg}<small class="text-secondary">${group.port.container_port}</small></div>`;
+      }
+    }).join('');
+  } else {
+    // Render ports individually (original behavior)
+    cell.innerHTML = container.ports.map(p => {
+      const badge = `<a href="${p.link}" data-tooltip="${p.link}" target="_blank" class="badge text-bg-dark rounded">${p.host_port}</a>`;
+
+      if (p.is_custom || !p.container_port) {
+        return `<div class="custom-port flex items-center mb-1">${badge}</div>`;
+      }
+
+      return `<div class="flex items-center mb-1">${badge}${arrowSvg}<small class="text-secondary">${p.container_port}</small></div>`;
+    }).join('');
+  }
+}
+
+function groupPortsIntoRanges(ports) {
+  if (!ports.length) return [];
+
+  // Sort ports by host_port numerically
+  const sortedPorts = [...ports].sort((a, b) => {
+    const portA = parseInt(a.host_port, 10);
+    const portB = parseInt(b.host_port, 10);
+    return portA - portB;
+  });
+
+  const groups = [];
+  let currentRange = null;
+
+  for (let i = 0; i < sortedPorts.length; i++) {
+    const port = sortedPorts[i];
+    const portNum = parseInt(port.host_port, 10);
+    
+    // Check if this port can be part of the current range
+    if (currentRange && 
+        portNum === currentRange.endPortNum + 1 &&
+        port.is_custom === currentRange.startPort.is_custom) {
+      // Extend the current range
+      currentRange.endPort = port;
+      currentRange.endPortNum = portNum;
+    } else {
+      // Close the current range if it exists and has more than one port
+      if (currentRange && currentRange.endPortNum > currentRange.startPortNum) {
+        groups.push({
+          isRange: true,
+          startPort: currentRange.startPort,
+          endPort: currentRange.endPort,
+          startPortNum: currentRange.startPortNum,
+          endPortNum: currentRange.endPortNum
+        });
+      } else if (currentRange) {
+        // Single port, add as individual
+        groups.push({
+          isRange: false,
+          port: currentRange.startPort
+        });
+      }
+      
+      // Start a new range
+      currentRange = {
+        startPort: port,
+        endPort: port,
+        startPortNum: portNum,
+        endPortNum: portNum
+      };
     }
+  }
 
-    return `<div class="flex items-center mb-1">${badge}${arrowSvg}<small class="text-secondary">${p.container_port}</small></div>`;
-  }).join('');
+  // Close the last range
+  if (currentRange) {
+    if (currentRange.endPortNum > currentRange.startPortNum) {
+      groups.push({
+        isRange: true,
+        startPort: currentRange.startPort,
+        endPort: currentRange.endPort,
+        startPortNum: currentRange.startPortNum,
+        endPortNum: currentRange.endPortNum
+      });
+    } else {
+      groups.push({
+        isRange: false,
+        port: currentRange.startPort
+      });
+    }
+  }
+
+  return groups;
 }
 
 export function renderTraefik(container, cell, hasAnyRoutes) {
