@@ -208,6 +208,18 @@ def process_swarm_service(service, tasks_by_service, client, server_name, public
         cache_key = update_checker.get_cache_key(server_name, service.name, image_name)
         update_available = get_or_check_update(cache_key, client, service, server_name, image_name, True)
 
+        # registry_url templates
+        image_registry_url = None
+        custom_registry_templates = os.environ.get("CUSTOM_REGISTRY_TEMPLATES", None)
+        if custom_registry_templates is not None:
+            # parse the Image name and apply template if the FQDN matches a key in the CUSTOM_REGISTRY_TEMPALTES array/dictionary
+            for fqdn,registry_url_tmpl in custom_registry_templates:
+                image_parts = image_name.split('/')
+                if image_parts[0] == fqdn:
+                        image_registry_url = registry_url_tmpl.format(*image_parts)
+                        # stop at first match
+                        break
+
         container_info = {
             'server': server_name,
             'name': spec.get('Name', service.name),
@@ -215,6 +227,7 @@ def process_swarm_service(service, tasks_by_service, client, server_name, public
             'status': status,
             'exit_code': None,
             'image': image_name,
+            'image_registry_url': image_registry_url,
             'stack': labels_data['stack_name'],
             'source_url': labels_data['source_url'],
             'custom_url': labels_data['custom_url'],

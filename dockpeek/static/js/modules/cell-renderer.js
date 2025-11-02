@@ -48,7 +48,12 @@ export function renderImage(container, cell, clone) {
 
   const registryLink = clone.querySelector('[data-content="registry-link"]');
   if (registryLink) {
-    const registryUrl = getRegistryUrl(container.image);
+    // handle custom registry templates
+    if (container.image_registry_url) {
+      const registryUrl = container.image_registry_url;
+    } else {
+      const registryUrl = getRegistryUrl(container.image);
+    }
     if (registryUrl) {
       registryLink.href = registryUrl;
       registryLink.classList.remove('hidden');
