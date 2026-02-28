@@ -648,7 +648,9 @@ export function showFreeIpResult(ip) {
   }
 
   const subnet = ip.split('.').slice(0, 3).join('.');
-  const ignoredIps = state.ignoredIps.filter(ignored => ignored.startsWith(subnet + '.'));
+  const ignoredIps = state.ignoredIps
+    .filter(ignored => ignored.startsWith(subnet + '.'))
+    .sort((a, b) => parseInt(a.split('.').pop(), 10) - parseInt(b.split('.').pop(), 10));
   const hasIgnored = ignoredIps.length > 0;
 
   const panelWasOpen = !!resultDiv.querySelector('.skipped-ips-panel:not(.hidden)');
