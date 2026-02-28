@@ -208,7 +208,7 @@ export function updateDisplay() {
 
   const searchTerm = searchInput.value.trim();
 
-  const freeMatch = searchTerm.match(/:free\s*(\d+)?/);
+  const freeMatch = searchTerm.match(/:free(?!ip)\s*(\d+)?/);
   if (freeMatch) {
     const occupiedPorts = new Set();
 
@@ -242,8 +242,48 @@ export function updateDisplay() {
     hideFreePortResult();
   }
 
-  // Remove :free from search term before normal filtering
-  const cleanSearchTerm = searchTerm.replace(/:free\s*\d*/g, '').trim();
+  const freeIpMatch = searchTerm.match(/:freeip\s*([\d.]+)?/);
+  if (freeIpMatch) {
+    const containersToCheck = state.currentServerFilter === "all"
+      ? state.allContainersData
+      : state.allContainersData.filter(c => c.server === state.currentServerFilter);
+
+    let subnet = freeIpMatch[1] ? freeIpMatch[1].replace(/\.$/, '') : null;
+
+    if (!subnet) {
+      const subnetCounts = {};
+      containersToCheck.forEach(c => {
+        if (c.ip_address) {
+          const parts = c.ip_address.split('.');
+          if (parts.length === 4) {
+            const prefix = parts.slice(0, 3).join('.');
+            subnetCounts[prefix] = (subnetCounts[prefix] || 0) + 1;
+          }
+        }
+      });
+      const entries = Object.entries(subnetCounts);
+      if (entries.length > 0) {
+        subnet = entries.sort((a, b) => b[1] - a[1])[0][0];
+      }
+    }
+
+    if (subnet) {
+      const occupied = new Set();
+      containersToCheck.forEach(c => {
+        if (c.ip_address && c.ip_address.startsWith(subnet + '.')) {
+          const lastOctet = parseInt(c.ip_address.split('.').pop(), 10);
+          if (!isNaN(lastOctet)) occupied.add(lastOctet);
+        }
+      });
+
+      const next = occupied.size > 0 ? Math.max(...occupied) + 1 : 1;
+      showFreeIpResult(`${subnet}.${next}`);
+    }
+  } else {
+    hideFreeIpResult();
+  }
+
+  const cleanSearchTerm = searchTerm.replace(/:freeip\s*[\d.]*/g, '').replace(/:free(?!ip)\s*\d*/g, '').trim();
 
   if (cleanSearchTerm) {
     const filters = parseAdvancedSearch(cleanSearchTerm);
@@ -580,6 +620,45 @@ export function showFreePortResult(port) {
 
 export function hideFreePortResult() {
   const resultDiv = document.getElementById('free-port-result');
+  if (resultDiv) {
+    resultDiv.classList.add('hidden');
+  }
+}
+
+export function showFreeIpResult(ip) {
+  let resultDiv = document.getElementById('free-ip-result');
+
+  if (!resultDiv) {
+    resultDiv = document.createElement('div');
+    resultDiv.id = 'free-ip-result';
+    resultDiv.className = 'free-port-result';
+    const searchInput = document.getElementById('search-input');
+    searchInput.parentElement.appendChild(resultDiv);
+  }
+
+  resultDiv.innerHTML = `
+    <div class="free-port-content">
+      <span class="free-port-label">Next free IP:</span>
+      <code class="free-port-number">${ip}</code>
+      <button class="copy-port-button" data-tooltip="Copy to clipboard" data-port="${ip}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  resultDiv.classList.remove('hidden');
+  const copyButton = resultDiv.querySelector('.copy-port-button');
+  if (copyButton) {
+    copyButton.removeEventListener('click', handleCopyPortClick);
+    copyButton.addEventListener('click', handleCopyPortClick);
+  }
+}
+
+export function hideFreeIpResult() {
+  const resultDiv = document.getElementById('free-ip-result');
   if (resultDiv) {
     resultDiv.classList.add('hidden');
   }
