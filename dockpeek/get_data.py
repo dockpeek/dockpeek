@@ -123,7 +123,6 @@ def extract_swarm_service_ports(service_attrs):
 def extract_container_ports(container_attrs):
     published_ports = []
     ports = container_attrs['NetworkSettings']['Ports']
-    
     if ports:
         for container_port, mappings in ports.items():
             if mappings:
@@ -131,8 +130,25 @@ def extract_container_ports(container_attrs):
                 host_port = m['HostPort']
                 host_ip = m.get('HostIp', '0.0.0.0')
                 published_ports.append((container_port, host_port, host_ip))
-    
+            else:
+                port_num = container_port.split('/')[0]
+                published_ports.append((container_port, port_num, None))
+    else:
+        exposed = container_attrs.get('Config', {}).get('ExposedPorts', {})
+        for container_port in exposed:
+            port_num = container_port.split('/')[0]
+            published_ports.append((container_port, port_num, None))
+
     return published_ports
+
+
+def get_container_network_ip(container_attrs):
+    networks = container_attrs.get('NetworkSettings', {}).get('Networks', {})
+    for network_info in networks.values():
+        ip = network_info.get('IPAddress', '')
+        if ip and ip not in ('0.0.0.0', '127.0.0.1'):
+            return ip
+    return None
 
 
 def extract_labels_data(labels, tags_enable):
@@ -255,13 +271,14 @@ def process_container(container, client, server_name, public_hostname, is_docker
         traefik_routes = extract_traefik_routes(labels, traefik_enabled)
 
         published_ports_data = extract_container_ports(container.attrs)
-        published_ports = [(cp, hp, None) for cp, hp, hi in published_ports_data]
-        host_ips = {cp: hi for cp, hp, hi in published_ports_data}
+        container_network_ip = get_container_network_ip(container.attrs)
 
         port_map = []
-        for container_port, host_port, _ in published_ports:
-            host_ip = host_ips.get(container_port, '0.0.0.0')
-            link_hostname = _get_link_hostname(public_hostname, host_ip, is_docker_host, request_hostname)
+        for container_port, host_port, host_ip in published_ports_data:
+            if host_ip is None and container_network_ip:
+                link_hostname = container_network_ip
+            else:
+                link_hostname = _get_link_hostname(public_hostname, host_ip, is_docker_host, request_hostname)
             link = create_port_link(host_port, labels_data['https_ports_list'], link_hostname, container_port)
             port_map.append({
                 'container_port': container_port,
