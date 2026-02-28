@@ -197,6 +197,17 @@
               </div>
 
 
+              <div class="column-menu-item draggable" data-column="ipaddress">
+                <div class="drag-handle">⋮⋮</div>
+                <label for="toggle-ipaddress">
+                  <span>IP Address</span>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="toggle-ipaddress">
+                    <span class="slider"></span>
+                  </div>
+                </label>
+              </div>
+
               <div class="column-menu-item draggable" data-column="logs">
                 <div class="drag-handle">⋮⋮</div>
                 <label for="toggle-logs">
@@ -243,6 +254,11 @@
               class="server-column table-cell-server py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 sortable-header server-column"
               data-sort-column="server">
               Server
+            </th>
+            <th
+              class="table-cell-ipaddress py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 sortable-header"
+              data-sort-column="ipaddress">
+              IP Address
             </th>
             <th
               class="table-cell-ports py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 sortable-header"
@@ -385,6 +401,8 @@
       </td>
       <td class="py-3 px-4 border-b border-gray-200 text-gray-400 text-sm server-column" data-content="server">
         <span data-content="server-name"></span>
+      </td>
+      <td class="py-3 px-4 border-b border-gray-200 table-cell-ipaddress text-gray-600 text-sm" data-content="ipaddress">
       </td>
       <td class="py-3 px-4 border-b border-gray-200" data-content="ports">
       </td>

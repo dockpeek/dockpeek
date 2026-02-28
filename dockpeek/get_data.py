@@ -322,6 +322,7 @@ def process_container(container, client, server_name, public_hostname, is_docker
             'source_url': labels_data['source_url'],
             'custom_url': labels_data['custom_url'],
             'ports': port_map,
+            'ip_address': container_network_ip,
             'traefik_routes': traefik_routes,
             'tags': labels_data['tags'],
             'update_available': update_available,

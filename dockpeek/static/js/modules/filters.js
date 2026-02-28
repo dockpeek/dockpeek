@@ -337,6 +337,10 @@ export function updateDisplay() {
       };
       valA = getTraefikRoutes(a);
       valB = getTraefikRoutes(b);
+    } else if (state.currentSortColumn === "ipaddress") {
+      const getLastOctet = (ip) => ip ? parseInt(ip.split('.').pop(), 10) : (state.currentSortDirection === "asc" ? Infinity : -1);
+      valA = getLastOctet(a.ip_address);
+      valB = getLastOctet(b.ip_address);
     } else if (typeof valA === "string" && typeof valB === "string") {
       valA = valA.toLowerCase();
       valB = valB.toLowerCase();

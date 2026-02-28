@@ -63,6 +63,10 @@ export class TableRenderer {
     statusCell.className = `py-3 px-4 border-b border-gray-200 table-cell-status ${className}`;
     statusCell.appendChild(span);
 
+    const ipAddressCell = clone.querySelector('[data-content="ipaddress"]');
+    ipAddressCell.classList.add('table-cell-ipaddress');
+    CellRenderer.renderIpAddress(container, ipAddressCell);
+
     const logsCell = clone.querySelector('[data-content="logs"]');
     logsCell.classList.add('table-cell-logs');
     CellRenderer.renderLogs(container, logsCell);
