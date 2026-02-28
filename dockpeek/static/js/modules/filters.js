@@ -112,6 +112,7 @@ export function parseAdvancedSearch(searchTerm) {
     ports: [],
     stacks: [],
     ids: [],
+    ips: [],
     general: []
   };
 
@@ -137,6 +138,8 @@ export function parseAdvancedSearch(searchTerm) {
         idValue = idValue.slice(1, -1);
       }
       filters.ids.push(idValue.toLowerCase());
+    } else if (term.startsWith('ip:')) {
+      filters.ips.push(term.substring(3).toLowerCase());
     } else {
       if (term.startsWith('"') && term.endsWith('"')) {
         term = term.slice(1, -1);
@@ -279,6 +282,13 @@ export function updateDisplay() {
         if (!hasAllStacks) return false;
       }
 
+      if (filters.ips.length > 0) {
+        const hasAllIps = filters.ips.every(searchIp =>
+          container.ip_address && container.ip_address.toLowerCase().includes(searchIp)
+        );
+        if (!hasAllIps) return false;
+      }
+
       if (filters.general.length > 0) {
         const hasAllGeneral = filters.general.every(searchTerm => {
           return (
@@ -286,6 +296,7 @@ export function updateDisplay() {
             container.image.toLowerCase().includes(searchTerm) ||
             (container.stack && container.stack.toLowerCase().includes(searchTerm)) ||
             (container.container_id && container.container_id.toLowerCase().includes(searchTerm)) ||
+            (container.ip_address && container.ip_address.toLowerCase().includes(searchTerm)) ||
             container.ports.some(p =>
               p.host_port.includes(searchTerm) ||
               p.container_port.includes(searchTerm)
