@@ -49,6 +49,30 @@ def get_registry_templates():
     from flask import current_app, jsonify
     return jsonify(current_app.config.get("CUSTOM_REGISTRY_TEMPLATES", {}))
 
+_DATA_DIR = '/app/data'
+
+@main_bp.route("/ignored-ips", methods=["GET"])
+@conditional_login_required
+def get_ignored_ips():
+    import os
+    file_path = os.path.join(_DATA_DIR, 'ignored_ips.json')
+    if os.path.exists(file_path):
+        with open(file_path) as f:
+            return jsonify(json.load(f))
+    return jsonify([])
+
+@main_bp.route("/ignored-ips", methods=["POST"])
+@conditional_login_required
+def save_ignored_ips():
+    import os
+    ips = request.get_json()
+    if not isinstance(ips, list):
+        return jsonify({"error": "Expected a list of IPs"}), 400
+    os.makedirs(_DATA_DIR, exist_ok=True)
+    with open(os.path.join(_DATA_DIR, 'ignored_ips.json'), 'w') as f:
+        json.dump(ips, f)
+    return jsonify({"ok": True})
+
 @main_bp.route("/data")
 @conditional_login_required
 def data():

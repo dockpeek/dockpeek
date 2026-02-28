@@ -12,6 +12,7 @@ export const state = {
   currentSortColumn: "name",
   currentSortDirection: "asc",
   currentServerFilter: "all",
+  ignoredIps: [],
   isDataLoaded: false,
   isCheckingForUpdates: false,
   updateCheckController: null,

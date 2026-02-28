@@ -3,6 +3,7 @@ import { updateSwarmIndicator, isSwarmMode } from './swarm-indicator.js';
 import { renderTable } from '../app.js';
 import { handlePruneImages, initPruneInfo } from './prune.js';
 import { updateContainerStats } from './container-stats.js';
+import { addIgnoredIp, removeIgnoredIp } from './ignored-ips.js';
 
 export function getCachedServerStatus() {
   const cache = state.serverStatusCache;
@@ -276,7 +277,15 @@ export function updateDisplay() {
         }
       });
 
-      const next = occupied.size > 0 ? Math.max(...occupied) + 1 : 1;
+      state.ignoredIps.forEach(ip => {
+        if (ip.startsWith(subnet + '.')) {
+          const lastOctet = parseInt(ip.split('.').pop(), 10);
+          if (!isNaN(lastOctet)) occupied.add(lastOctet);
+        }
+      });
+
+      let next = 2;
+      while (occupied.has(next)) next++;
       showFreeIpResult(`${subnet}.${next}`);
     }
   } else {
@@ -594,7 +603,8 @@ export function showFreePortResult(port) {
     resultDiv.id = 'free-port-result';
     resultDiv.className = 'free-port-result';
     const searchInput = document.getElementById('search-input');
-    searchInput.parentElement.appendChild(resultDiv);
+    const searchRow = searchInput.parentElement;
+    searchRow.parentElement.insertBefore(resultDiv, searchRow);
   }
 
   resultDiv.innerHTML = `
@@ -631,12 +641,29 @@ export function showFreeIpResult(ip) {
   if (!resultDiv) {
     resultDiv = document.createElement('div');
     resultDiv.id = 'free-ip-result';
-    resultDiv.className = 'free-port-result';
+    resultDiv.className = 'free-ip-chip';
     const searchInput = document.getElementById('search-input');
-    searchInput.parentElement.appendChild(resultDiv);
+    const searchRow = searchInput.parentElement;
+    searchRow.parentElement.insertBefore(resultDiv, searchRow);
   }
 
+  const subnet = ip.split('.').slice(0, 3).join('.');
+  const ignoredIps = state.ignoredIps.filter(ignored => ignored.startsWith(subnet + '.'));
+  const hasIgnored = ignoredIps.length > 0;
+
+  const panelWasOpen = !!resultDiv.querySelector('.skipped-ips-panel:not(.hidden)');
+
   resultDiv.innerHTML = `
+    ${hasIgnored ? `
+      <div class="skipped-ips-panel hidden">
+        <div class="skipped-ips-panel-label">Skipped IPs — click to remove</div>
+        <div class="skipped-ips-list">
+          ${ignoredIps.map(skipped => `
+            <button class="skipped-ip-btn" data-ip="${skipped}">${skipped}</button>
+          `).join('')}
+        </div>
+      </div>
+    ` : ''}
     <div class="free-port-content">
       <span class="free-port-label">Next free IP:</span>
       <code class="free-port-number">${ip}</code>
@@ -646,15 +673,58 @@ export function showFreeIpResult(ip) {
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
         </svg>
       </button>
+      <button class="skip-ip-button" data-tooltip="Skip this IP">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+        </svg>
+      </button>
+      ${hasIgnored ? `
+        <button class="manage-skipped-button" data-tooltip="Show skipped IPs">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="8" y1="6" x2="21" y2="6"></line>
+            <line x1="8" y1="12" x2="21" y2="12"></line>
+            <line x1="8" y1="18" x2="21" y2="18"></line>
+            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+          </svg>
+        </button>
+      ` : ''}
     </div>
   `;
 
   resultDiv.classList.remove('hidden');
+
+  if (panelWasOpen && hasIgnored) {
+    resultDiv.querySelector('.skipped-ips-panel').classList.remove('hidden');
+  }
+
   const copyButton = resultDiv.querySelector('.copy-port-button');
   if (copyButton) {
     copyButton.removeEventListener('click', handleCopyPortClick);
     copyButton.addEventListener('click', handleCopyPortClick);
   }
+
+  const skipButton = resultDiv.querySelector('.skip-ip-button');
+  if (skipButton) {
+    skipButton.addEventListener('click', () => {
+      addIgnoredIp(ip).then(() => updateDisplay());
+    });
+  }
+
+  const manageButton = resultDiv.querySelector('.manage-skipped-button');
+  if (manageButton) {
+    manageButton.addEventListener('click', () => {
+      resultDiv.querySelector('.skipped-ips-panel').classList.toggle('hidden');
+    });
+  }
+
+  resultDiv.querySelectorAll('.skipped-ip-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      removeIgnoredIp(btn.dataset.ip).then(() => updateDisplay());
+    });
+  });
 }
 
 export function hideFreeIpResult() {
