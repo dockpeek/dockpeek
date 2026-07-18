@@ -214,7 +214,7 @@ async function checkUpdatesIndividually() {
       updateProgressModal(processed, total, container.key);
 
       console.log(`Checking ${container.key} (${processed + 1}/${total})`);
-      let updateResult = false;
+      let updateResult = { available: false, version: null };
       let cancelled = false;
 
       try {
@@ -235,7 +235,7 @@ async function checkUpdatesIndividually() {
             cancelled = true;
           } else {
             updateResult = result.update_available;
-            console.log(`${container.key}: ${updateResult ? 'UPDATE AVAILABLE' : 'up to date'}`);
+            console.log(`${container.key}: ${updateResult.available ? 'UPDATE AVAILABLE' : 'up to date'}`);
           }
         }
       } catch (error) {
@@ -275,8 +275,9 @@ async function checkUpdatesIndividually() {
     state.allContainersData.forEach(container => {
       const key = `${container.server}:${container.name}`;
       if (updates.hasOwnProperty(key)) {
-        container.update_available = updates[key];
-        if (updates[key]) {
+        container.update_available = updates[key].available;
+        container.update_version = updates[key].version;
+        if (updates[key].available) {
           updatedContainers.push(container);
         }
       }
@@ -391,6 +392,7 @@ export async function installUpdate(serverName, containerName) {
     state.allContainersData.forEach(container => {
       if (container.server === serverName && container.name === containerName) {
         container.update_available = false;
+        container.update_version = null;
       }
     });
     updateDisplay();

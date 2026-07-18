@@ -93,12 +93,12 @@ def check_updates():
                 processed_containers += 1
                 key = f"{server['name']}:{container.name}"
                 try:
-                    update_available = update_checker.check_image_updates(
+                    update_result = update_checker.check_image_updates(
                         server['client'], container, server['name']
                     )
-                    updates[key] = update_available
+                    updates[key] = update_result
                 except Exception as e:
-                    updates[key] = False
+                    updates[key] = {"available": False, "version": None}
                     current_app.logger.error(f"Error during update check for {key}: {e}")
                 
                 if update_checker.is_cancelled:
@@ -168,14 +168,14 @@ def check_single_update():
         if update_checker.is_cancelled:
             return jsonify({"cancelled": True}), 200
             
-        update_available = update_checker.check_image_updates(
+        update_result = update_checker.check_image_updates(
             server['client'], container, server_name
         )
         
         key = f"{server_name}:{container_name}" 
         return jsonify({
             "key": key,
-            "update_available": update_available,
+            "update_available": update_result,
             "server_name": server_name,
             "container_name": container_name,
             "cancelled": update_checker.is_cancelled

@@ -312,6 +312,7 @@ services:
 | `dockpeek.link`  | Custom container link | `dockpeek.link=https://app.com` |
 | `dockpeek.port-range-grouping` | Control port range grouping | `dockpeek.port-range-grouping=false` |
 | `dockpeek.tags`  | tags                  | `dockpeek.tags=web,prod`        |
+| `dockpeek.update-tag` | Override tag for update check (defaults to latest) | `dockpeek.update-tag` |
 
 <br>
 
@@ -520,6 +521,14 @@ networks:
 > ```yaml
 > environment:
 >   - UPDATE_FLOATING_TAGS=major  # Checks 8-alpine instead of exact 8.2.2-alpine
+> ```
+>
+> **Override per container:**
+> You can override this globally set mode by adding the `dockpeek.update-tag` label to a specific container:
+> ```yaml
+> labels:
+>   - "dockpeek.update-tag" # Ignore pinned tag and check against latest
+>   - "dockpeek.update-tag=1.5" # Or check against a specific version
 > ```
 
 </details>

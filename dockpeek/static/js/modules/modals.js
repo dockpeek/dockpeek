@@ -9,7 +9,11 @@ export function showUpdatesModal(updatedContainers) {
 
   updatedContainers.forEach(container => {
     const li = document.createElement("li");
-    li.innerHTML = `<strong class="container-name">${container.name}</strong> <span class="stack-name">[${container.stack}]</span> <span class="server-name">(${container.server})</span> <span class="image-name">${container.image}</span>`;
+    let versionStr = "";
+    if (container.update_version) {
+      versionStr = ` <span class="text-green-600 font-medium whitespace-nowrap">→ ${container.update_version}</span>`;
+    }
+    li.innerHTML = `<strong class="container-name">${container.name}</strong> <span class="stack-name">[${container.stack}]</span> <span class="server-name">(${container.server})</span> <span class="image-name">${container.image}</span>${versionStr}`;
     updatesList.appendChild(li);
   });
 

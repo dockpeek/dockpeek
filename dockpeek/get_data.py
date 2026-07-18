@@ -166,7 +166,7 @@ def get_or_check_update(cache_key, client, container_or_service, server_name, im
         return cached_update
     
     if is_swarm:
-        return False
+        return {"available": False, "version": None}
     else:
         return update_checker.check_local_image_updates(client, container_or_service, server_name)
 
@@ -221,7 +221,8 @@ def process_swarm_service(service, tasks_by_service, client, server_name, public
             'ports': port_map,
             'traefik_routes': traefik_routes,
             'tags': labels_data['tags'],
-            'update_available': update_available,
+            'update_available': update_available.get('available', False) if isinstance(update_available, dict) else update_available,
+            'update_version': update_available.get('version', None) if isinstance(update_available, dict) else None,
             'port_range_grouping': port_range_grouping
         }
 
@@ -307,7 +308,8 @@ def process_container(container, client, server_name, public_hostname, is_docker
             'ports': port_map,
             'traefik_routes': traefik_routes,
             'tags': labels_data['tags'],
-            'update_available': update_available,
+            'update_available': update_available.get('available', False) if isinstance(update_available, dict) else update_available,
+            'update_version': update_available.get('version', None) if isinstance(update_available, dict) else None,
             'port_range_grouping': port_range_grouping
         }
 
