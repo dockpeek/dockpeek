@@ -282,6 +282,14 @@ function normalizeUrl(url) {
   return url.match(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//) ? url : `https://${url}`;
 }
 
+export function renderIpAddress(container, cell) {
+  if (container.ip_address) {
+    cell.textContent = container.ip_address;
+  } else {
+    cell.innerHTML = `<span class="status-none" style="padding-left: 5px;">none</span>`;
+  }
+}
+
 export function renderLogs(container, cell) {
   const logsButton = document.createElement('button');
   logsButton.className = 'logs-button text-gray-500 hover:text-blue-600 p-1 rounded transition-colors';

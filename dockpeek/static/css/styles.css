@@ -249,19 +249,18 @@ body.dark-mode #search-input:focus {
 }
 
 
-.free-port-result {
-  position: absolute;
-  bottom: 100%;
-  left: 0;
+.free-port-result,
+.free-ip-chip {
   margin-bottom: 8px;
   padding: 8px 16px;
   background: white;
   border: 2px solid #91bbff;
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  z-index: 100;
+  width: fit-content;
 }
 
+.dark-mode .free-ip-chip,
 .dark-mode .free-port-result {
   background: #1f2937;
   border-color: #3b82f6;
@@ -316,6 +315,113 @@ body.dark-mode #search-input:focus {
 
 .copy-port-button.copied {
   background: #10b981;
+}
+
+.skip-ip-button {
+  padding: 6px;
+  background: #f97316;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.skip-ip-button:hover {
+  background: #ea580c;
+}
+
+.dark-mode .skip-ip-button {
+  background: #c2410c;
+}
+
+.dark-mode .skip-ip-button:hover {
+  background: #9a3412;
+}
+
+.manage-skipped-button {
+  padding: 6px;
+  background: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.manage-skipped-button:hover {
+  background: #4b5563;
+}
+
+.dark-mode .manage-skipped-button {
+  background: #4b5563;
+}
+
+.dark-mode .manage-skipped-button:hover {
+  background: #374151;
+}
+
+.skipped-ips-panel {
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dark-mode .skipped-ips-panel {
+  border-bottom-color: #374151;
+}
+
+.skipped-ips-panel-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.skipped-ips-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.skipped-ip-btn {
+  background: #1f2937;
+  color: #f3f4f6;
+  font-family: monospace;
+  font-size: 13px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid #374151;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.skipped-ip-btn:hover {
+  background: #dc2626;
+  color: white;
+  border-color: #dc2626;
+  text-decoration: line-through;
+}
+
+.dark-mode .skipped-ip-btn {
+  background: #374151;
+  color: #e5e7eb;
+  border-color: #4b5563;
+}
+
+.dark-mode .skipped-ip-btn:hover {
+  background: #dc2626;
+  border-color: #dc2626;
 }
 
 #refresh-button {
