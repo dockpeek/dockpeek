@@ -146,6 +146,9 @@ def get_container_network_ip(container_attrs):
     networks = container_attrs.get('NetworkSettings', {}).get('Networks', {})
     for network_info in networks.values():
         ip = network_info.get('IPAddress', '')
+        if not ip:
+            ipam = network_info.get('IPAMConfig') or {}
+            ip = ipam.get('IPv4Address', '')
         if ip and ip not in ('0.0.0.0', '127.0.0.1'):
             return ip
     return None
