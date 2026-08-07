@@ -348,6 +348,8 @@ export class AnsiParser {
     return this.segmentsToHtml(segments, colorizer);
   }
 
+  // Text-context only: this leaves " and ' unescaped, so the result must never
+  // be interpolated into an attribute. Use escapeHtml() from sanitize.js there.
   escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;

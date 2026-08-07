@@ -2,6 +2,7 @@
 import { apiUrl } from './config.js';
 import { ansiParser } from './ansi-parser.js';
 import { filterByContainerName } from './filters.js';
+import { escapeHtml } from './sanitize.js';
 
 export class LogsViewer {
   constructor() {
@@ -347,7 +348,7 @@ export class LogsViewer {
 
     const stackElement = document.getElementById('logs-stack-name');
     if (stackName) {
-      stackElement.innerHTML = `• <span class="logs-stack-link">${stackName}</span>`;
+      stackElement.innerHTML = `• <span class="logs-stack-link">${escapeHtml(stackName)}</span>`;
       const stackLink = stackElement.querySelector('.logs-stack-link');
       stackLink.style.cursor = 'pointer';
       stackLink.dataset.stack = stackName;
@@ -574,12 +575,6 @@ export class LogsViewer {
 
       return escapedHtml;
     });
-  }
-
-  escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
   }
 
   async toggleStreaming() {
@@ -1039,7 +1034,7 @@ export class LogsViewer {
           <line x1="15" y1="9" x2="9" y2="15"></line>
           <line x1="9" y1="9" x2="15" y2="15"></line>
         </svg>
-        <span>${message}</span>
+        <span>${escapeHtml(message)}</span>
       </div>
     `;
   }

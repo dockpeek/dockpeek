@@ -1,3 +1,5 @@
+import { escapeHtml } from './sanitize.js';
+
 export function showLoadingIndicator() {
   const refreshButton = document.getElementById('refresh-button');
   const containerRowsBody = document.getElementById("container-rows");
@@ -13,7 +15,7 @@ export function hideLoadingIndicator() {
 export function displayError(message) {
   const containerRowsBody = document.getElementById("container-rows");
   hideLoadingIndicator();
-  containerRowsBody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-red-500">${message}</td></tr>`;
+  containerRowsBody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-red-500">${escapeHtml(message)}</td></tr>`;
 }
 
 export function initCustomTooltips() {

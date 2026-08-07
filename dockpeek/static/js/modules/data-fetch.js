@@ -5,6 +5,7 @@ import { showLoadingIndicator, hideLoadingIndicator, displayError } from './ui-u
 import { updateDisplay, setupServerUI, toggleClearButton, clearSearch, updateUpdatesLabel } from './filters.js';
 import { showConfirmationModal, showUpdatesModal, showNoUpdatesModal, showProgressModal, updateProgressModal, hideProgressModal, showUpdateInProgressModal, hideUpdateInProgressModal } from './modals.js';
 import { setCachedServerStatus } from './filters.js';
+import { escapeHtml } from './sanitize.js';
 
 let fetchController = null;
 let isFetching = false;
@@ -153,7 +154,7 @@ export async function checkForUpdates() {
     try {
       await showConfirmationModal(
         'Check Updates on Multiple Servers',
-        `You are about to check for updates on <strong>${serversToCheck.length}</strong> servers:\n ${serversToCheck.map(s => s.name).join(' • ')}\n\nThis operation may take longer and will pull images from registries. <strong>Do you want to continue?</strong>`,
+        `You are about to check for updates on <strong>${serversToCheck.length}</strong> servers:\n ${serversToCheck.map(s => escapeHtml(s.name)).join(' • ')}\n\nThis operation may take longer and will pull images from registries. <strong>Do you want to continue?</strong>`,
         'Check Updates'
       );
     } catch (error) {
@@ -352,13 +353,13 @@ export async function installUpdate(serverName, containerName) {
   }
   
   const dependentInfo = dependentContainers.length > 0 
-    ? `<br><br><span style="color: #f59e0b; font-weight: 600;">This container has ${dependentContainers.length} dependent container(s) that will be recreated:</span><br><span style="color: #c9891d; margin-left: 1rem;">${dependentContainers.join(', ')}</span>` 
+    ? `<br><br><span style="color: #f59e0b; font-weight: 600;">This container has ${dependentContainers.length} dependent container(s) that will be recreated:</span><br><span style="color: #c9891d; margin-left: 1rem;">${dependentContainers.map(escapeHtml).join(', ')}</span>`
     : '';
   
   try {
     await showConfirmationModal(
       'Confirm Update',
-      `Are you sure you want to update <strong>${containerName}</strong> on <strong>${serverName}</strong>? The container will be stopped and recreated with the new image.${dependentInfo}${
+      `Are you sure you want to update <strong>${escapeHtml(containerName)}</strong> on <strong>${escapeHtml(serverName)}</strong>? The container will be stopped and recreated with the new image.${dependentInfo}${
         isDockpeek 
           ? '<br><br><span style="color: #ef4444; font-weight: 600;">Warning: Dockpeek cannot update itself. This operation will fail. Please update dockpeek manually.</span>' 
           : ''

@@ -1,13 +1,15 @@
 import { state } from './state.js';
 import { getRegistryUrl } from './registry-urls.js';
+import { escapeHtml, safeUrl } from './sanitize.js';
 
 export function renderName(container, cell) {
   const nameSpan = cell.querySelector('[data-content="container-name"]');
 
-  if (container.custom_url) {
-    const url = normalizeUrl(container.custom_url);
+  const url = container.custom_url ? safeUrl(normalizeUrl(container.custom_url)) : '';
+
+  if (url) {
     const tooltipUrl = url.replace(/^https?:\/\//, '');
-    nameSpan.innerHTML = `<a href="${url}" target="_blank" class="text-blue-600 hover:text-blue-800" data-tooltip="${tooltipUrl}">${container.name}</a>`;
+    nameSpan.innerHTML = `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800" data-tooltip="${escapeHtml(tooltipUrl)}">${escapeHtml(container.name)}</a>`;
   } else {
     nameSpan.textContent = container.name;
   }
@@ -26,7 +28,7 @@ export function renderServer(container, clone) {
 
 export function renderStack(container, cell) {
   if (container.stack) {
-    cell.innerHTML = `<a href="#" class="stack-link text-blue-600 hover:text-blue-800 cursor-pointer" data-stack="${container.stack}" data-server="${container.server}">${container.stack}</a>`;
+    cell.innerHTML = `<a href="#" class="stack-link text-blue-600 hover:text-blue-800 cursor-pointer" data-stack="${escapeHtml(container.stack)}" data-server="${escapeHtml(container.server)}">${escapeHtml(container.stack)}</a>`;
   } else {
     cell.textContent = '';
   }
@@ -37,10 +39,13 @@ export function renderImage(container, cell, clone) {
 
   const sourceLink = clone.querySelector('[data-content="source-link"]');
   if (sourceLink) {
-    if (container.source_url) {
-      sourceLink.href = container.source_url;
+    // org.opencontainers.image.source is baked into the image by its author, so
+    // it can carry a javascript: URL even though it never passes through innerHTML.
+    const sourceUrl = safeUrl(container.source_url);
+    if (sourceUrl) {
+      sourceLink.href = sourceUrl;
       sourceLink.classList.remove('hidden');
-      sourceLink.setAttribute('data-tooltip', container.source_url);
+      sourceLink.setAttribute('data-tooltip', sourceUrl);
     } else {
       sourceLink.classList.add('hidden');
     }
@@ -48,7 +53,7 @@ export function renderImage(container, cell, clone) {
 
   const registryLink = clone.querySelector('[data-content="registry-link"]');
   if (registryLink) {
-    const registryUrl = getRegistryUrl(container.image);
+    const registryUrl = safeUrl(getRegistryUrl(container.image));
     if (registryUrl) {
       registryLink.href = registryUrl;
       registryLink.classList.remove('hidden');
@@ -85,7 +90,7 @@ export function renderTags(container, cell) {
       a.toLowerCase().localeCompare(b.toLowerCase())
     );
     cell.innerHTML = `<div class="tags-container">${sortedTags.map(tag =>
-      `<span class="tag-badge" data-tag="${tag}">${tag}</span>`
+      `<span class="tag-badge" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</span>`
     ).join('')}</div>`;
   } else {
     cell.innerHTML = '';
@@ -109,8 +114,8 @@ export function renderPorts(container, cell) {
 
     cell.innerHTML = portGroups.map(group => {
       if (group.isRange) {
-        const rangeBadge = `<a href="${group.startPort.link}" data-tooltip="${group.startPort.link}" target="_blank" class="badge text-bg-dark rounded">${group.startPort.host_port}-${group.endPort.host_port}</a>`;
-        
+        const rangeBadge = renderPortBadge(group.startPort, `${group.startPort.host_port}-${group.endPort.host_port}`);
+
         if (group.startPort.is_custom || !group.startPort.container_port) {
           return `<div class="custom-port flex items-center mb-1">${rangeBadge}</div>`;
         }
@@ -118,28 +123,38 @@ export function renderPorts(container, cell) {
         const startContainerPort = group.startPort.container_port.split('/')[0];
         const endContainerPort = group.endPort.container_port.split('/')[0];
         const protocol = group.startPort.container_port.split('/')[1] || 'tcp';
-        return `<div class="flex items-center mb-1">${rangeBadge}${arrowSvg}<small class="text-secondary">${startContainerPort}-${endContainerPort}/${protocol}</small></div>`;
+        return `<div class="flex items-center mb-1">${rangeBadge}${arrowSvg}<small class="text-secondary">${escapeHtml(`${startContainerPort}-${endContainerPort}/${protocol}`)}</small></div>`;
       } else {
-        const badge = `<a href="${group.port.link}" data-tooltip="${group.port.link}" target="_blank" class="badge text-bg-dark rounded">${group.port.host_port}</a>`;
+        const badge = renderPortBadge(group.port, group.port.host_port);
 
         if (group.port.is_custom || !group.port.container_port) {
           return `<div class="custom-port flex items-center mb-1">${badge}</div>`;
         }
 
-        return `<div class="flex items-center mb-1">${badge}${arrowSvg}<small class="text-secondary">${group.port.container_port}</small></div>`;
+        return `<div class="flex items-center mb-1">${badge}${arrowSvg}<small class="text-secondary">${escapeHtml(group.port.container_port)}</small></div>`;
       }
     }).join('');
   } else {
     cell.innerHTML = container.ports.map(p => {
-      const badge = `<a href="${p.link}" data-tooltip="${p.link}" target="_blank" class="badge text-bg-dark rounded">${p.host_port}</a>`;
+      const badge = renderPortBadge(p, p.host_port);
 
       if (p.is_custom || !p.container_port) {
         return `<div class="custom-port flex items-center mb-1">${badge}</div>`;
       }
 
-      return `<div class="flex items-center mb-1">${badge}${arrowSvg}<small class="text-secondary">${p.container_port}</small></div>`;
+      return `<div class="flex items-center mb-1">${badge}${arrowSvg}<small class="text-secondary">${escapeHtml(p.container_port)}</small></div>`;
     }).join('');
   }
+}
+
+function renderPortBadge(port, label) {
+  const link = safeUrl(port.link);
+
+  if (!link) {
+    return `<span class="badge text-bg-dark rounded">${escapeHtml(label)}</span>`;
+  }
+
+  return `<a href="${escapeHtml(link)}" data-tooltip="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" class="badge text-bg-dark rounded">${escapeHtml(label)}</a>`;
 }
 
 function groupPortsIntoRanges(ports, threshold = 5) {
@@ -270,8 +285,14 @@ export function renderTraefik(container, cell, hasAnyRoutes) {
 
   if (container.traefik_routes?.length) {
     cell.innerHTML = container.traefik_routes.map(route => {
-      const displayUrl = route.url.replace(/^https?:\/\//, '');
-      return `<div class="traefik-route mb-1"><div class="inline-block"><a href="${route.url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm"><span class="traefik-text">${displayUrl}</span></a></div></div>`;
+      const url = safeUrl(route.url);
+      const displayUrl = escapeHtml((url || route.url || '').replace(/^https?:\/\//, ''));
+
+      if (!url) {
+        return `<div class="traefik-route mb-1"><div class="inline-block"><span class="traefik-text">${displayUrl}</span></div></div>`;
+      }
+
+      return `<div class="traefik-route mb-1"><div class="inline-block"><a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 text-sm"><span class="traefik-text">${displayUrl}</span></a></div></div>`;
     }).join('');
   } else {
     cell.innerHTML = `<span class="status-none text-sm">none</span>`;

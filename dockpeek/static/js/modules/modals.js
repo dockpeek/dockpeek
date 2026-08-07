@@ -1,5 +1,6 @@
 import { updateDisplay } from './filters.js';
 import { state } from './state.js';
+import { escapeHtml } from './sanitize.js';
 
 export function showUpdatesModal(updatedContainers) {
   const updatesList = document.getElementById("updates-list");
@@ -9,7 +10,7 @@ export function showUpdatesModal(updatedContainers) {
 
   updatedContainers.forEach(container => {
     const li = document.createElement("li");
-    li.innerHTML = `<strong class="container-name">${container.name}</strong> <span class="stack-name">[${container.stack}]</span> <span class="server-name">(${container.server})</span> <span class="image-name">${container.image}</span>`;
+    li.innerHTML = `<strong class="container-name">${escapeHtml(container.name)}</strong> <span class="stack-name">[${escapeHtml(container.stack)}]</span> <span class="server-name">(${escapeHtml(container.server)})</span> <span class="image-name">${escapeHtml(container.image)}</span>`;
     updatesList.appendChild(li);
   });
 
@@ -189,7 +190,7 @@ export function showUpdateSuccessModal(containerName, serverName) {
   const buttonsContainer = okButton.parentElement;
 
   if (messageEl) {
-    messageEl.innerHTML = `Container <strong>"${containerName}"</strong> has been successfully updated!`;
+    messageEl.innerHTML = `Container <strong>"${escapeHtml(containerName)}"</strong> has been successfully updated!`;
   }
 
   if (modal) {
@@ -231,7 +232,7 @@ export function showUpdateErrorModal(containerName, errorMessage, serverName) {
   const buttonsContainer = okButton.parentElement;
 
   if (messageEl) {
-    messageEl.innerHTML = errorMessage.replace(/\n/g, '<br>');
+    messageEl.innerHTML = escapeHtml(errorMessage).replace(/\n/g, '<br>');
   }
 
   if (modal) {
@@ -301,7 +302,7 @@ export function showPruneInfoModal(data) {
     if (data.servers && data.servers.length > 0) {
       details += '<div class="text-sm text-left mt-3"><ul class="mt-2 space-y-1 prune-details-list">';
       data.servers.forEach(server => {
-        details += `<li>• <strong>${server.server}:</strong> ${server.count} image${server.count > 1 ? 's' : ''} (${formatSize(server.size)})`;
+        details += `<li>• <strong>${escapeHtml(server.server)}:</strong> ${server.count} image${server.count > 1 ? 's' : ''} (${formatSize(server.size)})`;
 
         if (server.images && server.images.length > 0) {
           const sortedImages = [...server.images].sort((a, b) => {
@@ -312,8 +313,8 @@ export function showPruneInfoModal(data) {
           details += '<ul class="ml-4 mt-1 text-xs text-gray-700">';
           sortedImages.forEach(img => {
             const imageName = img.tags && img.tags.length > 0
-              ? img.tags[0].replace(/</g, '&lt;').replace(/>/g, '&gt;')
-              : `&lt;untagged&gt; (${img.id.substring(7, 19)})`;
+              ? escapeHtml(img.tags[0])
+              : `&lt;untagged&gt; (${escapeHtml(img.id.substring(7, 19))})`;
             const imageClass = img.pending_update ? 'text-orange-500 font-medium' : '';
             const pendingLabel = img.pending_update ? ' <span class="text-orange-500">[pending update]</span>' : '';
             details += `<li class="${imageClass}">- ${imageName} (${formatSize(img.size)})${pendingLabel}</li>`;
@@ -379,7 +380,7 @@ export function showPruneResultModal(data) {
   if (data.servers && data.servers.length > 0) {
     message += '<div class="text-sm text-left"><ul class="mt-2 space-y-1 prune-details-list">';
     data.servers.forEach(server => {
-      message += `<li>• <strong>${server.server}:</strong> ${server.count} image${server.count > 1 ? 's' : ''} (${formatSize(server.size)})</li>`;
+      message += `<li>• <strong>${escapeHtml(server.server)}:</strong> ${server.count} image${server.count > 1 ? 's' : ''} (${formatSize(server.size)})</li>`;
     });
     message += '</ul></div>';
   }

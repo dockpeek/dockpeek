@@ -34,4 +34,14 @@ def create_app(config_class=Config):
     from . import main
     app.register_blueprint(main.main_bp)
 
+    @app.after_request
+    def set_security_headers(response):
+        csp = app.config.get('CONTENT_SECURITY_POLICY')
+        if csp:
+            response.headers.setdefault('Content-Security-Policy', csp)
+
+        response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+        response.headers.setdefault('Referrer-Policy', 'same-origin')
+        return response
+
     return app
