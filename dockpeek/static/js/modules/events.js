@@ -206,12 +206,15 @@ export function initLogsButtons() {
       e.preventDefault();
       const serverName = logsButton.dataset.server;
       const containerName = logsButton.dataset.container;
-      const isSwarm = state.swarmServers.includes(serverName);
+      const selectedContainer = state.filteredAndSortedContainers.find(
+        c => c.server === serverName && c.name === containerName
+      );
+      const isSwarm = Boolean(selectedContainer?.is_swarm_service);
 
       if (serverName && containerName) {
         const containersWithSwarm = state.filteredAndSortedContainers.map(c => ({
           ...c,
-          is_swarm: state.swarmServers.includes(c.server)
+          is_swarm: Boolean(c.is_swarm_service)
         }));
 
         logsViewer.setContainerList(containersWithSwarm, serverName, containerName);
@@ -223,7 +226,10 @@ export function initLogsButtons() {
       e.preventDefault();
       const serverName = viewLogsBtn.dataset.server;
       const containerName = viewLogsBtn.dataset.container;
-      const isSwarm = state.swarmServers.includes(serverName);
+      const selectedContainer = state.filteredAndSortedContainers.find(
+        c => c.server === serverName && c.name === containerName
+      );
+      const isSwarm = Boolean(selectedContainer?.is_swarm_service);
 
       if (serverName && containerName) {
         const successModal = document.getElementById('update-success-modal');
@@ -237,7 +243,7 @@ export function initLogsButtons() {
         }
         const containersWithSwarm = state.filteredAndSortedContainers.map(c => ({
           ...c,
-          is_swarm: state.swarmServers.includes(c.server)
+          is_swarm: Boolean(c.is_swarm_service)
         }));
 
         logsViewer.setContainerList(containersWithSwarm, serverName, containerName);

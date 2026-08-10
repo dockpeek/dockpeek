@@ -8,6 +8,7 @@ export const state = {
   },
   filteredAndSortedContainers: [],
   swarmServers: [],
+  swarmModeEnabled: true,
   pruneInfoCache: null,
   currentSortColumn: "name",
   currentSortDirection: "asc",

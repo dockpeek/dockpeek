@@ -164,8 +164,14 @@ export function updateDisplay() {
     statsData = statsData.filter(c => c.server === state.currentServerFilter);
   }
 
-  // Swarm mode: repurpose toggle to "Show Problems"
   const swarmMode = isSwarmMode();
+
+  if (swarmMode) {
+    workingData = workingData.filter(c => !c.is_swarm_standalone);
+    statsData = statsData.filter(c => !c.is_swarm_standalone);
+  }
+
+  // Swarm mode: repurpose toggle to "Show Problems"
   const filterLabel = document.getElementById('filter-running-label');
   const filterContainer = filterRunningCheckbox.parentElement;
 

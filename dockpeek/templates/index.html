@@ -29,14 +29,14 @@
       <div class="flex justify-between items-center mb-6">
         <div class="flex items-center space-x-4">
           <h1 class="logo-title text-3xl font-bold">dockpeek</h1>
-          <div id="swarm-indicator"
-            class="hidden flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium swarm-indicator">
+          <button id="swarm-indicator" type="button" aria-pressed="true"
+            class="hidden flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium swarm-indicator cursor-pointer focus:outline-none">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path
                 d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2M6.5 12.5L7.5 16.5L11.5 17.5L7.5 18.5L6.5 22.5L5.5 18.5L1.5 17.5L5.5 16.5L6.5 12.5M17.5 12.5L18.5 16.5L22.5 17.5L18.5 18.5L17.5 22.5L16.5 18.5L12.5 17.5L16.5 16.5L17.5 12.5Z" />
             </svg>
-            <span>Swarm Mode</span>
-          </div>
+            <span class="swarm-mode-label">Swarm Mode</span>
+          </button>
         </div>
         <div class="flex space-x-4 items-center text-sm controls-container">
           <div class="status-filter flex items-center space-x-3">

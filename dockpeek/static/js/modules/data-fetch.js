@@ -448,6 +448,9 @@ export async function refreshContainerStatus() {
 
     for (let i = state.allContainersData.length - 1; i >= 0; i--) {
       const container = state.allContainersData[i];
+      if (container.is_swarm_standalone) {
+        continue;
+      }
       if (!statusKeys.has(`${container.server}:${container.name}`)) {
         state.allContainersData.splice(i, 1);
       }
