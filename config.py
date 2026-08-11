@@ -29,6 +29,7 @@ class Config:
     TAGS_ENABLE = os.environ.get("TAGS", "true").lower() == "true"
     PORT_RANGE_GROUPING = os.environ.get("PORT_RANGE_GROUPING", "true").lower() == "true"
     PORT_RANGE_THRESHOLD = int(os.environ.get("PORT_RANGE_THRESHOLD", "5"))
+    CONTAINER_ACTIONS_ENABLE = os.environ.get("CONTAINER_ACTIONS_ENABLE", "false").lower() == "true"
     
     PERMANENT_SESSION_LIFETIME = timedelta(days=14)
     

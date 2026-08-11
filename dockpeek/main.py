@@ -292,6 +292,70 @@ def update_container_route():
             return jsonify({"error": str(e)}), 500
 
 
+@main_bp.route("/container-action", methods=["POST"])
+@conditional_login_required
+def container_action():
+    if not current_app.config.get('CONTAINER_ACTIONS_ENABLE', False):
+        return jsonify({"error": "Container lifecycle actions are disabled"}), 403
+
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"error": "Request body must be a JSON object"}), 400
+
+    server_name = data.get('server_name')
+    container_id = data.get('container_id')
+    action = data.get('action')
+    allowed_actions = {'start', 'stop', 'restart'}
+
+    if not all(isinstance(value, str) for value in (server_name, container_id, action)):
+        return jsonify({"error": "server_name, container_id, and action must be strings"}), 400
+
+    if not server_name or not container_id or not action:
+        return jsonify({"error": "Missing server_name, container_id, or action"}), 400
+
+    if action not in allowed_actions:
+        return jsonify({"error": "Unsupported container action"}), 400
+
+    servers = discover_docker_clients()
+    server = next((s for s in servers if s['name'] == server_name and s['status'] == 'active'), None)
+
+    if not server:
+        return jsonify({"error": f"Server '{server_name}' not found or inactive"}), 404
+
+    try:
+        info = server['client'].info()
+        is_swarm = info.get('Swarm', {}).get('LocalNodeState', '').lower() == 'active'
+        if is_swarm:
+            return jsonify({"error": "Container lifecycle actions are not supported for Swarm services"}), 400
+
+        container = server['client'].containers.get(container_id)
+
+        if action == 'start':
+            container.start()
+        elif action == 'stop':
+            container.stop()
+        else:
+            container.restart()
+
+        return jsonify({
+            "status": "success",
+            "action": action,
+            "server_name": server_name,
+            "container_id": container_id
+        }), 200
+    except docker.errors.NotFound:
+        return jsonify({"error": f"Container '{container_id}' not found"}), 404
+    except docker.errors.APIError as e:
+        current_app.logger.error(f"Container action error for {server_name}:{container_id}: {e}")
+        status_code = getattr(e, 'status_code', None)
+        if status_code not in {400, 403, 404, 409}:
+            status_code = 500
+        return jsonify({"error": str(e)}), status_code
+    except Exception as e:
+        current_app.logger.error(f"Container action error for {server_name}:{container_id}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 
 def parse_image_name(image_name):
     if ':' in image_name:

@@ -418,6 +418,7 @@ def get_all_data():
     TAGS_ENABLE = current_app.config['TAGS_ENABLE']
     PORT_RANGE_GROUPING = current_app.config['PORT_RANGE_GROUPING']
     PORT_RANGE_THRESHOLD = current_app.config['PORT_RANGE_THRESHOLD']
+    CONTAINER_ACTIONS_ENABLE = current_app.config.get('CONTAINER_ACTIONS_ENABLE', False)
 
     request_hostname = None
     if has_request_context():
@@ -427,7 +428,12 @@ def get_all_data():
             pass
 
     if not servers:
-        return {"servers": [], "containers": [], "swarm_servers": []}
+        return {
+            "servers": [],
+            "containers": [],
+            "swarm_servers": [],
+            "container_actions_enabled": CONTAINER_ACTIONS_ENABLE
+        }
 
     all_container_data = []
     swarm_servers = []
@@ -483,5 +489,6 @@ def get_all_data():
         "traefik_enabled": TRAEFIK_ENABLE,
         "port_range_grouping_enabled": PORT_RANGE_GROUPING,
         "port_range_threshold": PORT_RANGE_THRESHOLD,
-        "swarm_servers": swarm_servers
+        "swarm_servers": swarm_servers,
+        "container_actions_enabled": CONTAINER_ACTIONS_ENABLE
     }

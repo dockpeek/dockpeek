@@ -226,6 +226,9 @@ services:
 | `PORT_RANGE_GROUPING`         | `true`        | Set to `false` to disable port range grouping globally |
 | `PORT_RANGE_THRESHOLD`        | `5`           | Minimum number of consecutive ports to group as a range (see [Port Range Grouping](#port-range-grouping)) |
 | `CUSTOM_REGISTRY_TEMPLATES`   | `{}`          | URL templates for custom/private registries using `{0}`, `{1}`, `{2}` placeholders (see [Custom Registry Templates](#custom-registry-templates)) |
+| `CONTAINER_ACTIONS_ENABLE`    | `false`       | Set to `true` to enable authenticated Start, Stop, and Restart controls; Docker API write permissions are also required |
+
+Lifecycle actions require Docker write access; socket proxies must permit POST plus start, stop, and restart operations, and read-only endpoints cannot perform them.
 
 ### Multi-Host Variables
 
