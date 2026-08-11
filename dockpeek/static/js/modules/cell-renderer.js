@@ -15,6 +15,86 @@ export function renderName(container, cell) {
   }
 }
 
+const lifecycleIcons = {
+  start: {
+    color: '#28a745',
+    markup: '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7L8 5z"></path></svg>'
+  },
+  stop: {
+    color: '#dc3545',
+    markup: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="1"></rect></svg>'
+  },
+  restart: {
+    color: '#2b7fff',
+    markup: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3V8M21 8H16M21 8L18 5.29168C16.4077 3.86656 14.3051 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21C16.2832 21 19.8675 18.008 20.777 14"></path></svg>'
+  }
+};
+
+export function renderLifecycleActions(container, clone) {
+  const actionsContainer = clone.querySelector('[data-content="lifecycle-actions"]');
+  if (!actionsContainer || window.containerActionsEnabled !== true) return;
+
+  if (state.swarmServers.includes(container.server)) return;
+
+  const action = typeof container.lifecycle_action === 'string'
+    ? container.lifecycle_action
+    : container.lifecycle_action?.action;
+  if (action) {
+    const actionLabels = {
+      start: 'Starting...',
+      stop: 'Stopping...',
+      restart: 'Restarting...'
+    };
+    const transitionalStatuses = ['starting', 'restarting', 'removing'];
+
+    if (!transitionalStatuses.includes(container.status) &&
+        !['running', 'healthy', 'unhealthy', 'exited', 'created'].includes(container.status)) {
+      return;
+    }
+
+    const pendingButton = document.createElement('button');
+    pendingButton.type = 'button';
+    pendingButton.className = 'logs-button p-1 rounded opacity-50';
+    pendingButton.disabled = true;
+    pendingButton.setAttribute('aria-label', actionLabels[action] || 'Updating container...');
+    pendingButton.setAttribute('data-tooltip', actionLabels[action] || 'Updating container...');
+    pendingButton.setAttribute('aria-live', 'polite');
+    pendingButton.innerHTML = `
+      <svg class="animate-spin h-4 w-4 text-blue-500" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+    `;
+    actionsContainer.appendChild(pendingButton);
+    return;
+  }
+
+  const actions = {
+    running: ['stop', 'restart'],
+    healthy: ['stop', 'restart'],
+    unhealthy: ['stop', 'restart'],
+    exited: ['start'],
+    created: ['start']
+  }[container.status];
+
+  if (!actions || !container.container_id) return;
+
+  actions.forEach(actionName => {
+    const button = document.createElement('button');
+    const icon = lifecycleIcons[actionName];
+    button.type = 'button';
+    button.className = 'logs-button p-1 rounded transition-colors';
+    button.style.color = icon.color;
+    button.dataset.lifecycleAction = actionName;
+    button.dataset.server = container.server;
+    button.dataset.containerId = container.container_id;
+    button.setAttribute('aria-label', `${actionName} container`);
+    button.setAttribute('data-tooltip', `${actionName[0].toUpperCase() + actionName.slice(1)} container`);
+    button.innerHTML = icon.markup;
+    actionsContainer.appendChild(button);
+  });
+}
+
 export function renderServer(container, clone) {
   const serverCell = clone.querySelector('[data-content="server-name"]').closest('td');
   const serverSpan = serverCell.querySelector('[data-content="server-name"]');

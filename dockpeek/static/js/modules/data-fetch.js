@@ -26,6 +26,17 @@ export async function fetchContainerData() {
 
   isFetching = true;
 
+  const pendingLifecycleActions = new Map(
+    state.allContainersData
+      .filter(container => container.lifecycle_action && container.container_id)
+      .map(container => [
+        `${container.server}:${container.container_id}`,
+        typeof container.lifecycle_action === 'object'
+          ? { ...container.lifecycle_action }
+          : container.lifecycle_action
+      ])
+  );
+
   if (fetchController) {
     fetchController.abort();
   }
@@ -40,13 +51,24 @@ export async function fetchContainerData() {
     });
     if (!response.ok) throw createResponseError(response);
 
-    const { servers = [], containers = [], traefik_enabled = true, port_range_grouping_enabled = true, port_range_threshold = 5, swarm_servers = [] } = await response.json();
+    const { servers = [], containers = [], traefik_enabled = true, port_range_grouping_enabled = true, port_range_threshold = 5, swarm_servers = [], container_actions_enabled = false } = await response.json();
 
     state.allServersData.splice(0, state.allServersData.length, ...servers);
     setCachedServerStatus(servers);
-    state.allContainersData.splice(0, state.allContainersData.length, ...containers);
+    const refreshedContainers = containers.map(container => {
+      const lifecycleAction = pendingLifecycleActions.get(
+        `${container.server}:${container.container_id}`
+      );
+
+      return lifecycleAction
+        ? { ...container, lifecycle_action: lifecycleAction }
+        : container;
+    });
+
+    state.allContainersData.splice(0, state.allContainersData.length, ...refreshedContainers);
 
     state.swarmServers = swarm_servers;
+    window.containerActionsEnabled = container_actions_enabled;
 
     window.traefikEnabled = traefik_enabled;
     window.portRangeGroupingEnabled = port_range_grouping_enabled;
@@ -406,6 +428,80 @@ export async function installUpdate(serverName, containerName) {
     hideUpdateInProgressModal();
   }
 }
+
+const lifecycleSettledStatuses = {
+  start: ['running', 'healthy', 'unhealthy'],
+  stop: ['exited'],
+  restart: ['running', 'healthy', 'unhealthy']
+};
+
+function settleContainerLifecycleAction(container) {
+  const pendingAction = container.lifecycle_action;
+  const action = typeof pendingAction === 'string' ? pendingAction : pendingAction?.action;
+  if (pendingAction?.request_pending) return;
+  if (action && lifecycleSettledStatuses[action]?.includes(container.status)) {
+    delete container.lifecycle_action;
+  }
+}
+
+export async function performContainerAction(action, serverName, containerId) {
+  const findContainer = () => state.allContainersData.find(
+    item => item.server === serverName && item.container_id === containerId
+  );
+  let container = findContainer();
+
+  if (!container || window.containerActionsEnabled !== true || container.lifecycle_action) return;
+
+  container.lifecycle_action = { action, request_pending: true };
+  updateDisplay();
+
+  try {
+    const response = await fetch(apiUrl('/container-action'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        server_name: serverName,
+        container_id: containerId,
+        action
+      })
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to change container state.');
+    }
+
+    container = findContainer();
+    if (!container) return;
+    container.lifecycle_action.request_pending = false;
+    const deadline = Date.now() + 5000;
+    do {
+      await refreshContainerStatus();
+      container = findContainer();
+      if (!container) return;
+      settleContainerLifecycleAction(container);
+      if (!container.lifecycle_action) {
+        updateDisplay();
+        return;
+      }
+      if (Date.now() >= deadline) break;
+      await new Promise(resolve => setTimeout(resolve, 500));
+    } while (container.lifecycle_action);
+
+    if (container.lifecycle_action) {
+      delete container.lifecycle_action;
+      updateDisplay();
+      alert('Container action was sent, but the final state could not be confirmed.');
+    }
+  } catch (error) {
+    console.error('Container action failed:', error);
+    const currentContainer = findContainer();
+    if (currentContainer) delete currentContainer.lifecycle_action;
+    updateDisplay();
+    alert(error.message);
+  }
+}
+
 let statusRefreshController = null;
 
 export async function refreshContainerStatus() {
@@ -461,6 +557,7 @@ export async function refreshContainerStatus() {
         existing.status = updated.status;
         existing.exit_code = updated.exit_code;
         existing.started_at = updated.started_at;
+        settleContainerLifecycleAction(existing);
       }
     });
 

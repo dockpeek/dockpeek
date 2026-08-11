@@ -52,6 +52,7 @@ export class TableRenderer {
     CellRenderer.renderImage(container, imageCell, clone);
 
     CellRenderer.renderUpdateIndicator(container, clone);
+    CellRenderer.renderLifecycleActions(container, clone);
 
     const tagsCell = clone.querySelector('[data-content="tags"]');
     tagsCell.classList.add('table-cell-tags');

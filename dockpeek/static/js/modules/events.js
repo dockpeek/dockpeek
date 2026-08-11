@@ -1,4 +1,4 @@
-import { fetchContainerData, checkForUpdates, updateExportLink, installUpdate } from './data-fetch.js';
+import { fetchContainerData, checkForUpdates, updateExportLink, installUpdate, performContainerAction } from './data-fetch.js';
 import { updateDisplay, clearSearch, filterByStackAndServer, parseAdvancedSearch, toggleClearButton } from './filters.js';
 import { toggleThemeMenu, setTheme } from './ui-utils.js';
 import { updateColumnVisibility } from './column-visibility.js';
@@ -95,6 +95,18 @@ export function initEventListeners() {
   });
 
   containerRowsBody.addEventListener('click', function (e) {
+    const lifecycleButton = e.target.closest('[data-lifecycle-action]');
+    if (lifecycleButton) {
+      e.preventDefault();
+      e.stopPropagation();
+      performContainerAction(
+        lifecycleButton.dataset.lifecycleAction,
+        lifecycleButton.dataset.server,
+        lifecycleButton.dataset.containerId
+      );
+      return;
+    }
+
     if (e.target.classList.contains('update-available-indicator') || e.target.closest('.update-available-indicator')) {
       e.preventDefault();
       e.stopPropagation();
@@ -199,7 +211,7 @@ export function initEventListeners() {
 }
 export function initLogsButtons() {
   document.addEventListener('click', (e) => {
-    const logsButton = e.target.closest('.logs-button');
+    const logsButton = e.target.closest('.logs-button:not([data-lifecycle-action])');
     const viewLogsBtn = e.target.closest('.view-logs-btn');
 
     if (logsButton) {
